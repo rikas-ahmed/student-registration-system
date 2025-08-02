@@ -1,6 +1,9 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const { graphqlHTTP } = require('express-graphql');
+const schema = require('./graphql/schema');
+const resolvers = require('./graphql/resolvers');
 const connectDB = require('./config/db');
 
 dotenv.config();
@@ -10,9 +13,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// REST API Routes
 app.use('/api/student', require('./routes/studentRoutes'));
 app.use('/api/teacher', require('./routes/teacherRoutes'));
+
+// GraphQL Endpoint
+app.use('/graphql', graphqlHTTP({
+  schema,
+  rootValue: resolvers,
+  graphiql: true
+}));
 
 app.get('/', (req, res) => {
   res.send('API is running...');
