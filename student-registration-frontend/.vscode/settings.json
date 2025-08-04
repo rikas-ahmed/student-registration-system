@@ -1,6 +1,0 @@
-{
-  "css.validate": false,
-  "editor.codeActionsOnSave": {
-    "source.fixAll": true
-  },
-}
