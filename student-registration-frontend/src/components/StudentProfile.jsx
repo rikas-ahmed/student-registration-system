@@ -3,12 +3,17 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const subjects = ['Art', 'ICT', 'Tamil', 'Religion', 'Commerce', 'English', 'Science', 'Mathematics', 'History'];
 
 const schema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
+  firstName: z.string()
+    .min(1, 'First name is required')
+    .regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
+  lastName: z.string()
+    .min(1, 'Last name is required')
+    .regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),  
   age: z
     .number({ invalid_type_error: 'Age is required' })
     .min(18, 'Age must be 18 or above'),
@@ -24,6 +29,8 @@ const StudentProfile = () => {
   const [uploading, setUploading] = useState(false);
   const [picURL, setPicURL] = useState('');
 
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -35,22 +42,27 @@ const StudentProfile = () => {
     defaultValues: {
       firstName: '',
       lastName: '',
-      age: '', // Keep as string or null for initial empty state, let zod handle number conversion on submit
+      age: '',
       address: '',
       marks: Array(9).fill(0),
     },
   });
 
+  //Promise
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        // IMPORTANT: If this is a student profile, it should fetch *their* profile, not all students for a teacher.
-        // Assuming your backend has an endpoint like /api/student/profile that uses the studentToken
-        const res = await axios.get('http://localhost:5000/api/student/profile', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const student = res.data; // Assuming res.data is the student object
+    const fetchProfile = () => {
+      if (!token) {
+        setLoading(false);
+        alert("No student token found. Please log in.");
+        navigate('/student/login');
+        return;
+      }
 
+      axios.get('http://localhost:5000/api/student/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(res => { 
+        const student = res.data;
         if (student) {
           reset({
             firstName: student.firstName,
@@ -61,27 +73,23 @@ const StudentProfile = () => {
           });
           setPicURL(student.profilePic || '');
         }
-      } catch (err) {
-        console.error('Profile load error', err);
+      })
+      .catch(err => { 
+        console.error('Profile load error (Promise .then/.catch):', err);
         alert('Failed to load profile. Please log in again.');
-        // Optionally redirect to login if token is invalid
-      } finally {
+        navigate('/student/login');
+      })
+      .finally(() => { 
         setLoading(false);
-      }
+      });
     };
 
-    if (token) { // Only fetch if token exists
-      fetchProfile();
-    } else {
-      setLoading(false); // No token, stop loading
-      alert("No student token found. Please log in.");
-      // navigate('/student/login'); // Consider redirecting if no token
-    }
-  }, [reset, token]); // Add reset and token to dependencies
+    fetchProfile(); 
+  }, [reset, token, navigate]); 
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data) => { 
     try {
-      await axios.put('http://localhost:5000/api/student/update', data, {
+      await axios.put('http://localhost:5000/api/student/update', data, { 
         headers: { Authorization: `Bearer ${token}` },
       });
       alert('Profile updated!');
@@ -90,14 +98,14 @@ const StudentProfile = () => {
     }
   };
 
-  const handleUpload = async (e) => {
+  const handleUpload = async (e) => { 
     const file = e.target.files[0];
     if (!file) return;
     const formData = new FormData();
     formData.append('profilePic', file);
     setUploading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/student/upload', formData, {
+      const res = await axios.post('http://localhost:5000/api/student/upload', formData, { 
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -112,12 +120,27 @@ const StudentProfile = () => {
     }
   };
 
+   const handleLogout = () => {
+    localStorage.removeItem('studentToken');
+    alert('Logged out successfully!');
+    navigate('/');
+  };
+
   if (loading) return <div className="text-center p-10 text-xl text-gray-700">Loading profile...</div>;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
       <div className="w-full max-w-2xl bg-white shadow-lg rounded-lg p-8">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Student Profile</h2>
+
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={handleLogout}
+            className="px-5 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
+          >
+            Logout
+          </button>
+        </div>
 
         {picURL && (
           <img src={`http://localhost:5000/${picURL}`} alt="Profile" className="w-32 h-32 rounded-full mx-auto mb-6 object-cover border-2 border-blue-500 shadow-md" />
@@ -190,6 +213,10 @@ const StudentProfile = () => {
                       type="number"
                       className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       {...field}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === '' ? '' : parseInt(value, 10));
+                      }}
                       min="0"
                       max="100"
                     />
@@ -198,7 +225,7 @@ const StudentProfile = () => {
               </div>
             ))}
           </div>
-          {errors.marks && <p className="mt-1 text-red-500 text-sm">{errors.marks?.message}</p>}
+          {errors.marks && typeof errors.marks.message === 'string' && <p className="mt-1 text-red-500 text-sm">{errors.marks?.message}</p>}
 
           <button
             type="submit"

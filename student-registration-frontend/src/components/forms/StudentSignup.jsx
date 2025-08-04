@@ -2,15 +2,15 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { studentRegister } from '../../services/api'; // Make sure this path is correct
+import { studentRegister, checkAddressUniqueness  } from '../../services/api'; 
 import { useNavigate } from 'react-router-dom';
 
 const schema = z.object({
-  firstName: z.string().min(1, 'First Name is required'),
-  lastName: z.string().min(1, 'Last Name is required'),
+  firstName: z.string().min(1, 'First Name is required').regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
+  lastName: z.string().min(1, 'Last Name is required').regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
   email: z.string().email('Invalid email'),
   age: z
-    .string() // Keep as string for input, then refine to number
+    .string() 
     .refine((val) => !isNaN(val) && Number(val) >= 18, {
       message: 'Age must be a number and at least 18',
     }),
@@ -25,16 +25,48 @@ const StudentSignup = () => {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    setError,   
+    clearErrors 
   } = useForm({
     resolver: zodResolver(schema),
   });
 
+  const handleAddressBlur = async (event) => {
+    const address = event.target.value;
+    if (address.length === 0) { 
+      clearErrors('address');
+      return;
+    }
+
+    clearErrors('address');
+
+    try {
+      const response = await checkAddressUniqueness(address);
+      if (!response.isUnique) {
+        setError('address', {
+          type: 'manual',
+          message: response.message 
+        });
+      }
+    } catch (err) {
+      console.error("Error during address uniqueness check:", err);
+      setError('address', {
+        type: 'manual',
+        message: err.message || 'Could not verify address. Please try again.'
+      });
+    }
+  };
+
   const onSubmit = (data) => {
-    // Ensure age is converted to a number before sending to API if needed by backend
     const submissionData = { ...data, age: Number(data.age) };
 
     studentRegister(submissionData, (error, result) => {
       if (error) {
+        if (error.message.includes('Address already registered')) {
+          setError('address', { type: 'manual', message: error.message });
+        } else if (error.message.includes('Email already registered')) {
+          setError('email', { type: 'manual', message: error.message });
+        }
         alert('Registration failed: ' + error.message);
       } else {
         alert('Registration successful! Check your email.');
@@ -83,7 +115,7 @@ const StudentSignup = () => {
             <label htmlFor="age" className="block text-sm font-medium text-gray-700 mb-1">Age</label>
             <input
               id="age"
-              type="number" // Use type="number" for age input
+              type="number" 
               {...register('age')}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
@@ -96,6 +128,7 @@ const StudentSignup = () => {
               id="address"
               {...register('address')}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              onBlur={handleAddressBlur} 
             />
             {errors.address && <p className="mt-1 text-red-500 text-sm">{errors.address?.message}</p>}
           </div>
@@ -111,6 +144,7 @@ const StudentSignup = () => {
             {errors.password && <p className="mt-1 text-red-500 text-sm">{errors.password?.message}</p>}
           </div>
 
+          <div className="flex flex-col gap-3 pt-4">
           <button
             type="submit"
             disabled={isSubmitting}
@@ -118,6 +152,14 @@ const StudentSignup = () => {
           >
             {isSubmitting ? 'Submitting...' : 'Sign Up'}
           </button>
+          <button
+              type="button" 
+              onClick={() => navigate("/student/login")}
+              className="w-full text-blue-600 hover:text-blue-800 text-sm font-medium p-2"
+            >
+              Already have an account? Login
+          </button>
+          </div>
         </form>
       </div>
     </div>

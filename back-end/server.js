@@ -13,11 +13,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// REST API Routes
+app.use('/uploads', express.static('uploads'));
+
 app.use('/api/student', require('./routes/studentRoutes'));
 app.use('/api/teacher', require('./routes/teacherRoutes'));
 
-// GraphQL Endpoint
 app.use('/graphql', graphqlHTTP({
   schema,
   rootValue: resolvers,

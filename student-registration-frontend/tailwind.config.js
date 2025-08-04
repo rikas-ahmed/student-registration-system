@@ -3,8 +3,7 @@ module.exports = {
   content: [
     "./index.html",
     "./src/**/*.{js,jsx}",
-    "./lib/**/*.{js,jsx}",
-    // "./src/styles/globals.css", 
+    "./lib/**/*.{js,jsx}", 
   ],
   theme: {
     extend: {},

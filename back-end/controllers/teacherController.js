@@ -16,6 +16,11 @@ const registerTeacher = async (req, res) => {
       return res.status(400).json({ message: 'Age must be 18 or above' });
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Invalid email format' });
+    }
+
     const existingTeacher = await Teacher.findOne({ email });
     if (existingTeacher) {
       return res.status(400).json({ message: 'Email already registered' });
@@ -64,7 +69,7 @@ const getAllStudents = async (req, res) => {
 
 const updateStudentByTeacher = async (req, res) => {
   try {
-    const student = await Student.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const student = await Student.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!student) return res.status(404).json({ message: 'Student not found' });
     res.json(student);
   } catch (error) {
