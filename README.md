@@ -1,4 +1,4 @@
-# student-registration-system
+# Student-Registration-System
 
 A full-stack web application for managing student registrations, profiles, and academic marks, with separate interfaces for students and teachers.
 
