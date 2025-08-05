@@ -25,7 +25,7 @@ This system provides comprehensive functionalities for both students and teacher
 - Form Validation: Client-side validation using Zod and React Hook Form for immediate feedback, and server-side validation for data integrity (e.g., unique email/address).
 - Responsive UI: Designed with Tailwind CSS for a modern and adaptive user experience.
 
-### Technologies Used
+## Technologies Used
 The project is built using a MERN stack with additional libraries for enhanced functionality.
 #### Frontend:
 - React.js: A JavaScript library for building user interfaces.
