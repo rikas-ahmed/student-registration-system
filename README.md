@@ -16,8 +16,8 @@ This system provides comprehensive functionalities for both students and teacher
 - Login: Secure login for registered teachers.
 - Teacher Dashboard: View a list of all registered students.
 - Student Management (CRUD):
-- Edit Student Details: Update student's personal information and marks.
-- Delete Student: Remove student records from the system.
+   - Edit Student Details: Update student's personal information and marks.
+   - Delete Student: Remove student records from the system.
 - Logout: Securely log out from their dashboard.
 
 ### General Features:
